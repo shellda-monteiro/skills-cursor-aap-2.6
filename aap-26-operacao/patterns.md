@@ -70,7 +70,8 @@ Antes de upgrade de OS do host     → backup
 ```
 
 ```bash
-./aap_setup.sh --tags backup -e "backup_dest=/mnt/nfs/aap-backups/"
+ansible-playbook -i inventory ansible.containerized_installer.backup \
+  -e "backup_dir=/mnt/nfs/aap-backups/"
 ```
 
 ---

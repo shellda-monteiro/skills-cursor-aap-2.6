@@ -52,8 +52,9 @@ nc -zv controller.empresa.org 27199
 # Testar PostgreSQL
 nc -zv db.empresa.org 5432
 
-# Bundle de suporte
-./aap_setup.sh --tags support_bundle
+# Bundle de suporte (RPM installer — containerizado: coletar logs via podman)
+podman logs automation-controller > controller.log
+podman logs automation-gateway > gateway.log
 
 # Estado do Mesh
 awx-manage list_instances
@@ -64,17 +65,22 @@ oc get pods -n aap-production
 oc get pvc -n aap-production
 ```
 
-## Backup e Restore
+## Backup e Restore (Containerizado)
 
 ```bash
-# Backup
-./aap_setup.sh --tags backup
+# Backup (destino padrão: ~/backups)
+ansible-playbook -i inventory ansible.containerized_installer.backup
 
-# Backup com destino
-./aap_setup.sh --tags backup -e "backup_dest=/mnt/backup/"
+# Backup com destino customizado
+ansible-playbook -i inventory ansible.containerized_installer.backup \
+  -e "backup_dir=/mnt/backup/"
 
 # Restore
-./aap_setup.sh --tags restore -e "restore_backup_file=/mnt/backup/aap-backup.tar.gz"
+ansible-playbook -i inventory ansible.containerized_installer.restore
+
+# Restore com arquivo específico
+ansible-playbook -i inventory ansible.containerized_installer.restore \
+  -e "restore_backup_file=/mnt/backup/aap-backup.tar.gz"
 ```
 
 ## Checklist Operação Segura

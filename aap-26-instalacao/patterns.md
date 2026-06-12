@@ -91,7 +91,8 @@
 ```bash
 # Separar senhas em credentials.yml e encriptar com Vault
 ansible-vault encrypt credentials.yml
-./aap_setup.sh -e @credentials.yml -- --ask-vault-pass
+ansible-playbook -i inventory -e @credentials.yml \
+  --ask-vault-pass -K ansible.containerized_installer.install
 ```
 
 **Errado:**

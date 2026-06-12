@@ -68,7 +68,7 @@ EDA Controller     ──┘
 
 1. **RHEL 9.4+** ou RHEL 10 (x86_64, AArch64, s390x, ppc64le)
 2. **Usuário não-root com sudo** — dados em `$HOME/aap/` e `$HOME/.local/share/containers/`
-3. **ansible-core**: 2.14 no RHEL 9 · 2.16 no RHEL 10 (instalar via `dnf install ansible-core`)
+3. **ansible-core**: 2.14 no RHEL 9 · 2.16 no RHEL 10 (instalar via `dnf install ansible-core`); a collection `ansible.containerized_installer` vem empacotada no installer
 4. **NTP configurado** em todos os nós (falhas de JWT e certificados sem NTP)
 5. **DNS/FQDN** resolvível para todos os nós — sem underscores (`_`) nos hostnames
 6. **Podman NÃO suporta NFS** para home directory — usar disco local para `$HOME/.local/share/containers/`
@@ -80,7 +80,7 @@ EDA Controller     ──┘
 |---|---|
 | [chapters/ch01-componentes.md](chapters/ch01-componentes.md) | Componentes, Redis, PostgreSQL, Automation Mesh |
 | [chapters/ch02-topologias.md](chapters/ch02-topologias.md) | Topologias testadas: requisitos, exemplos de inventory |
-| [chapters/ch03-containerizado.md](chapters/ch03-containerizado.md) | Instalação Containerizada: passo a passo, inventory, TLS, DB externo |
+| [chapters/ch03-containerizado.md](chapters/ch03-containerizado.md) | Instalação Containerizada: `ansible.containerized_installer.install`, inventory, TLS, DB externo |
 | [chapters/ch04-openshift-operator.md](chapters/ch04-openshift-operator.md) | Instalação via Operator: OCP, StorageClass, custom resources |
 | [chapters/ch05-rede-portas.md](chapters/ch05-rede-portas.md) | Portas de rede, protocolos, regras de firewall, quay.io/CDN |
 | [glossary.md](glossary.md) | Termos técnicos: EE, EDA, CaC, Receptor, Mesh, Hub, etc. |

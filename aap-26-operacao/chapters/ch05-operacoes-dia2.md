@@ -3,15 +3,18 @@
 ## Backup e Restore (Containerizado)
 
 ```bash
-# Backup completo (para o serviço, faz backup, reinicia)
-./aap_setup.sh --tags backup
+# Backup completo (destino padrão: ~/backups)
+ansible-playbook -i inventory ansible.containerized_installer.backup
 
 # Backup com destino customizado
-./aap_setup.sh --tags backup \
-  -e "backup_dest=/mnt/backup/aap/"
+ansible-playbook -i inventory ansible.containerized_installer.backup \
+  -e "backup_dir=/mnt/backup/aap/"
 
-# Restore
-./aap_setup.sh --tags restore \
+# Restore (mesmo ambiente/hostnames)
+ansible-playbook -i inventory ansible.containerized_installer.restore
+
+# Restore com arquivo específico
+ansible-playbook -i inventory ansible.containerized_installer.restore \
   -e "restore_backup_file=/mnt/backup/aap/aap-backup-<timestamp>.tar.gz"
 
 # O arquivo de backup inclui:
@@ -58,7 +61,7 @@ EOF
 
 ```bash
 # 1. Fazer backup ANTES do upgrade
-./aap_setup.sh --tags backup
+ansible-playbook -i inventory ansible.containerized_installer.backup
 
 # 2. Baixar nova versão do installer
 tar xfvz ansible-automation-platform-containerized-setup-<nova-versao>.tar.gz
@@ -68,7 +71,7 @@ cp /path/to/my-inventory ansible-automation-platform-containerized-setup-<nova-v
 
 # 4. Executar upgrade (mesmo comando de instalação)
 cd ansible-automation-platform-containerized-setup-<nova-versao>/
-./aap_setup.sh
+ansible-playbook -i inventory ansible.containerized_installer.install
 
 # O installer detecta instalação existente e faz upgrade preservando dados
 ```
@@ -86,8 +89,9 @@ exec2.exemplo.org  # novo nó adicionado
 node_type=execution
 ```
 ```bash
-# Re-executar setup para provisionar apenas o novo nó
-./aap_setup.sh --limit exec2.exemplo.org
+# Re-executar instalação para provisionar apenas o novo nó
+ansible-playbook -i inventory ansible.containerized_installer.install \
+  --limit exec2.exemplo.org
 ```
 
 ### Adicionar EDA Controller (enterprise)

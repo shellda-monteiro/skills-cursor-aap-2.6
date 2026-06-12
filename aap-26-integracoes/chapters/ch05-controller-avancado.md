@@ -116,11 +116,11 @@ sudo -u awx awx-manage host_metric --since 2025-01-01 --json
 ```bash
 # Backup
 cd /path/to/aap-installer/
-./aap_setup.sh --tags backup
+ansible-playbook -i inventory ansible.containerized_installer.backup
 
 # Restore
-./aap_setup.sh --tags restore \
-  -e backup_file=/path/to/backup.tar.gz
+ansible-playbook -i inventory ansible.containerized_installer.restore \
+  -e "restore_backup_file=/path/to/backup.tar.gz"
 ```
 
 ## Backup e Restore — OpenShift Operator

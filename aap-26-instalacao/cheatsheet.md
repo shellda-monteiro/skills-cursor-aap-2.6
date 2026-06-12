@@ -95,25 +95,26 @@ bundle_dir=/path/to/bundle/
 [ ] Para DB externo: ICU habilitado, hstore habilitado no banco do Hub
 ```
 
-## Comandos de Setup
+## Comandos de Setup (Containerizado)
 
 ```bash
-# Instalação (containerizado)
-ANSIBLE_BECOME_METHOD='sudo' ANSIBLE_BECOME=True \
-ANSIBLE_HOST_KEY_CHECKING=False \
-./aap_setup.sh
+# Instalação
+ansible-playbook -i inventory ansible.containerized_installer.install
 
-# Com Vault
-./aap_setup.sh -e @credentials.yml -- --ask-vault-pass
+# Com Vault e become interativo
+ansible-playbook -i inventory -e @credentials.yml \
+  --ask-vault-pass -K ansible.containerized_installer.install
 
 # Backup
-./aap_setup.sh --tags backup
+ansible-playbook -i inventory ansible.containerized_installer.backup
 
 # Restore
-./aap_setup.sh --tags restore -e '{restore_backup_file: "/path/backup.tar.gz"}'
+ansible-playbook -i inventory ansible.containerized_installer.restore
+ansible-playbook -i inventory ansible.containerized_installer.restore \
+  -e "restore_backup_file=/path/backup.tar.gz"
 
 # Uninstall
-./aap_setup.sh --tags uninstall
+ansible-playbook -i inventory ansible.containerized_installer.uninstall
 
 # Verificar inventory
 ansible all -i inventory --list-hosts

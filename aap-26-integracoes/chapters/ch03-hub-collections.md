@@ -121,7 +121,7 @@ additional_build_env:
 ```bash
 # Re-sincronizar coleções após upgrade
 cd /path/to/aap-installer/
-./aap_setup.sh --tags configure_hub
+ansible-playbook -i inventory ansible.containerized_installer.install --tags configure_hub
 ```
 
 ## Verificar Assinatura de Collection

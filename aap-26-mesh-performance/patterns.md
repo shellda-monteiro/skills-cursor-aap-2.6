@@ -91,7 +91,7 @@ cd ansible-automation-platform-containerized-setup-2.6/
 # (usar senhas, hostnames e configurações do inventário RPM)
 
 # 4. Rodar migração
-./aap_setup.sh -i inventory-migration
+ansible-playbook -i inventory-migration ansible.containerized_installer.install
 ```
 
 ---
@@ -106,6 +106,6 @@ OCP: Automation Execution → Infrastructure → Instances → Add
 
 Para VM-based/Container — requer re-run do installer:
 ```bash
-./aap_setup.sh -i inventory
 # (adicionar novo nó ao grupo [execution_nodes] no inventory antes)
+ansible-playbook -i inventory ansible.containerized_installer.install
 ```

@@ -6,7 +6,7 @@
 1. Preparar RHEL host (usuário, sudo, NTP, DNS, ansible-core)
 2. Baixar installer (.tar.gz online ou bundle offline)
 3. Editar inventory file
-4. Executar ./aap_setup.sh
+4. Executar ansible-playbook -i <inventory> ansible.containerized_installer.install
 5. Ativar subscrição (credenciais ou manifest file)
 ```
 
@@ -34,32 +34,50 @@ cd ansible-automation-platform-containerized-setup-<version>/
 
 ```
 ansible-automation-platform-containerized-setup-<version>/
-├── aap_setup.sh          ← script principal de instalação
 ├── inventory             ← inventory enterprise (padrão)
 ├── inventory-growth      ← inventory growth (all-in-one)
 ├── README.md             ← documentação de variáveis
-└── collections/          ← collections empacotadas
+└── collections/          ← collection ansible.containerized_installer empacotada
 ```
 
 **Usar `inventory-growth` para topologia all-in-one; `inventory` para enterprise.**
+
+## Executar Instalação
+
+```bash
+# Instalação padrão (online)
+ansible-playbook -i inventory ansible.containerized_installer.install
+
+# Com senhas em Vault e privilege escalation interativo
+ansible-playbook -i inventory -e @credentials.yml \
+  --ask-vault-pass -K -v ansible.containerized_installer.install
+
+# Parâmetros opcionais:
+#   -i <inventory>        inventory a usar
+#   -e @<vault_file>      variáveis sensíveis via Ansible Vault
+#   --ask-vault-pass       solicita senha do Vault
+#   -K                     solicita senha de become (sudo)
+#   -v / -vv / -vvv / -vvvv  verbosidade (aumenta tempo de execução)
+```
+
+**Nota:** A instalação containerizada AAP 2.6 usa playbooks da collection `ansible.containerized_installer` via `ansible-playbook`. O script `setup.sh`/`aap_setup.sh` pertence ao instalador RPM (deprecated), não ao containerizado.
 
 ## Segurança de Senhas no Inventory
 
 ```bash
 # Criar arquivo separado para credenciais
 cat > credentials.yml << EOF
-admin_password: my_secure_password
-pg_password: my_pg_password
+gateway_admin_password: my_secure_password
+postgresql_admin_password: my_pg_password
 registry_password: my_registry_password
 EOF
 
 # Encriptar com Ansible Vault
 ansible-vault encrypt credentials.yml
 
-# Executar setup com vault
-ANSIBLE_BECOME_METHOD='sudo' ANSIBLE_BECOME=True \
-ANSIBLE_HOST_KEY_CHECKING=False \
-./aap_setup.sh -e @credentials.yml -- --ask-vault-pass
+# Executar instalação com vault
+ansible-playbook -i inventory -e @credentials.yml \
+  --ask-vault-pass -K ansible.containerized_installer.install
 ```
 
 **NUNCA versionar inventory com senhas em texto claro no Git.**
@@ -177,22 +195,36 @@ sudo reposync --repo=rhel-9-for-x86_64-baseos-rpms --download-path=/var/repos
 
 # Inventory para instalação bundle
 bundle_install=true
-bundle_dir=/path/to/bundle/
+bundle_dir='{{ lookup("ansible.builtin.env", "PWD") }}/bundle'
 # NÃO incluir registry_username/registry_password
 ```
 
 ## Manutenção
 
 ```bash
-# Upgrade
-./aap_setup.sh  # re-executar após atualizar o installer
+# Upgrade — re-executar install com o installer da mesma versão instalada
+ansible-playbook -i inventory ansible.containerized_installer.install
 
-# Backup
-./aap_setup.sh --tags backup
+# Backup (destino padrão: ~/backups; customizar com backup_dir no inventory)
+ansible-playbook -i inventory ansible.containerized_installer.backup
 
-# Restore
-./aap_setup.sh --tags restore -e '{restore_backup_file: "/path/to/backup.tar.gz"}'
+# Restore (mesmo ambiente/hostnames)
+ansible-playbook -i inventory ansible.containerized_installer.restore
+
+# Restore com arquivo específico
+ansible-playbook -i inventory ansible.containerized_installer.restore \
+  -e "restore_backup_file=/path/to/backup.tar.gz"
 
 # Uninstall
-./aap_setup.sh --tags uninstall
+ansible-playbook -i inventory ansible.containerized_installer.uninstall
+
+# Uninstall preservando imagens ou bancos
+ansible-playbook -i inventory ansible.containerized_installer.uninstall \
+  -e container_keep_images=true
+ansible-playbook -i inventory ansible.containerized_installer.uninstall \
+  -e postgresql_keep_databases=true
+
+# Reinstall preservando banco (coletar secret keys com podman secret inspect antes)
+ansible-playbook -i inventory ansible.containerized_installer.install \
+  -e controller_secret_key=<secret_key_value>
 ```
