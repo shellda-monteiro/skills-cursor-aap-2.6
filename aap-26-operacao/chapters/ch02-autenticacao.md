@@ -1,8 +1,28 @@
 # Ch02 — Autenticação: LDAP, SAML, OIDC, OAuth2
 
-## Autenticação Plugável no Platform Gateway
+## Métodos de Autenticação Suportados (AAP 2.6)
 
-O AAP 2.6 usa um sistema de autenticação plugável no Platform Gateway. Cada método é um "Authenticator" com ordem de prioridade e "Authenticator Maps" que mapeiam atributos do IdP para permissões AAP.
+O AAP 2.6 suporta os seguintes métodos via sistema de autenticação plugável do Platform Gateway:
+
+| Método | Quando usar |
+|---|---|
+| **Local** | Conta local no AAP (padrão, sempre disponível) |
+| **LDAP** | Active Directory / OpenLDAP com bind + busca de grupos |
+| **SAML 2.0** | IdPs corporativos (Keycloak, ADFS, Okta) |
+| **Generic OIDC** | Qualquer IdP compatível com OpenID Connect |
+| **Microsoft Entra ID** (Azure AD) | Azure OAuth2/OIDC |
+| **Google OAuth2** | Contas Google / Google Workspace |
+| **Keycloak** | Keycloak/RHSSO direto |
+| **GitHub** | Contas pessoais GitHub |
+| **GitHub Organization** | Membros de uma organização GitHub |
+| **GitHub Team** | Membros de um time GitHub |
+| **GitHub Enterprise** | GitHub Enterprise Server |
+| **GitHub Enterprise Organization** | Org no GitHub Enterprise |
+| **GitHub Enterprise Team** | Time no GitHub Enterprise |
+| **TACACS+** | Controle de acesso via protocolo TACACS+ |
+| **RADIUS** | Autenticação via servidor RADIUS |
+
+> **Dica:** Múltiplos autenticadores podem ser configurados em paralelo com ordem de prioridade. O primeiro que autenticar o usuário com sucesso é usado.
 
 ```
 Usuario faz login

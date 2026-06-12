@@ -121,6 +121,18 @@ spec:
 | Browser | Firefox ou Chrome suportados |
 | IP | IPv4, IPv6, dual-stack |
 
+## Requisitos de Banco de Dados (PostgreSQL)
+
+| Cenário | Versão suportada |
+|---|---|
+| **PostgreSQL gerenciado pelo AAP** | PostgreSQL **15** (instalado pelo installer) |
+| **PostgreSQL externo (customer-provided)** | PostgreSQL **15, 16 ou 17** |
+
+**Requisitos para banco externo:**
+- Deve ter suporte a **International Components for Unicode (ICU)**
+- PostgreSQL 16 ou 17 externos: backup/restore deve ser feito por processos externos — as utilidades do AAP dependem de PostgreSQL 15
+- Ref: [Red Hat Ansible Automation Platform Database Scope of Coverage](https://access.redhat.com/articles/4010491)
+
 ### Setup obrigatório do host RHEL
 ```bash
 # 1. Registrar e habilitar repositórios

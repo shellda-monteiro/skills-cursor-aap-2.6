@@ -4,43 +4,77 @@
 
 Decision Environments são imagens de contêiner que contêm o motor de execução dos Rulebooks do EDA. São análogos aos Execution Environments do Automation Controller.
 
-### DE padrão Red Hat
+### DE padrão Red Hat (AAP 2.6 — usar rhel9)
 ```
-registry.redhat.io/ansible-automation-platform-26/de-minimal-rhel8:latest
-registry.redhat.io/ansible-automation-platform-26/de-supported-rhel8:latest
+registry.redhat.io/ansible-automation-platform-26/de-minimal-rhel9:latest
+registry.redhat.io/ansible-automation-platform-26/de-supported-rhel9:latest
 ```
 
-### Construir DE customizado
+> **IMPORTANTE:** Usar a imagem correspondente à versão do AAP conectado:
+> - AAP 2.4 → `de-minimal-rhel9:latest` (platform-24) ou rhel8
+> - AAP 2.5 → `de-minimal-rhel9:latest` (platform-25) ou rhel8
+> - AAP 2.6 → `de-minimal-rhel9:latest` (platform-26) **apenas rhel9**
+
+### Construir DE customizado (com Ansible Builder ≥ 3.0)
 
 ```yaml
 # decision-environment.yml
 version: 3
 
-base_image:
-  name: registry.redhat.io/ansible-automation-platform-26/de-minimal-rhel8:latest
+images:
+  base_image:
+    name: 'registry.redhat.io/ansible-automation-platform-26/de-minimal-rhel9:latest'
 
 dependencies:
   galaxy:
     collections:
-      - name: ansible.eda
-      - name: community.general
+      - name: servicenow.itsm
+  python_interpreter:
+    package_system: "python3.12"
+  exclude:
+    all_from_collections:
+      # ansible.eda já está instalado no de-minimal — não reinstalar
+      - ansible.eda
+  options:
+    package_manager_path: /usr/bin/microdnf
+```
+
+Para incluir pacotes Python e RPM adicionais:
+
+```yaml
+version: 3
+images:
+  base_image:
+    name: 'registry.redhat.io/ansible-automation-platform-26/de-minimal-rhel9:latest'
+dependencies:
+  galaxy:
+    collections:
+      - name: servicenow.itsm
   python:
-    - requests>=2.28.0
-    - boto3>=1.26.0   # se usar source plugins AWS
+    - six
+    - psutil
+  python_interpreter:
+    package_system: "python3.12"
+  exclude:
+    all_from_collections:
+      - ansible.eda
+  options:
+    package_manager_path: /usr/bin/microdnf
 ```
 
 ```bash
-# Instalar ansible-builder
-pip3 install --user ansible-builder
+# Pré-requisito
+pip3 install --user 'ansible-builder>=3.0'
 
 # Construir a imagem
 ansible-builder build \
   --file decision-environment.yml \
-  --tag meu-de:latest \
+  --tag meu-de:1.0 \
   --container-runtime podman
 
 # Push para Private Hub
-podman push meu-de:latest <hub-fqdn>/organizacao/meu-de:latest
+podman tag meu-de:1.0 <hub-fqdn>/organizacao/meu-de:1.0
+podman push <hub-fqdn>/organizacao/meu-de:1.0
 ```
 
 ## Credenciais no EDA Controller
@@ -96,19 +130,75 @@ Password: <senha>
 
 ## Troubleshooting de Ativações EDA
 
-```bash
-# Via CLI do Controller (se tiver acesso ao host)
-# Ver logs do processo de ativação
-journalctl -u automation-eda-activations -f
+### Diagnóstico sistemático (4 passos)
 
-# Via UI: EDA Controller → Rulebook Activations → [nome] → History
+1. **Checar logs de ativação via UI:**
+   - EDA Controller → Automation Decisions → Rulebook Activations → `[nome]` → History
+   - Selecionar execução → aba Output
 
-# Problemas comuns:
-# 1. Decision Environment não encontrado → verificar credencial de registry
-# 2. Falha ao conectar ao Controller → verificar credencial AAP
-# 3. Webhook não recebido → verificar firewall e porta do source plugin
-# 4. Condição nunca satisfeita → usar action: debug para inspecionar evento
+2. **Nível de log Debug:**
+   - Se o log padrão (`Error`) não mostrar o problema, recriar a ativação com `Log level: Debug`
+
+3. **Logs por container (acesso ao host):**
+   ```bash
+   # Ver logs do serviço EDA
+   journalctl -u automation-eda-activations -f
+
+   # Arquivos de log no host
+   ls /var/log/ansible-automation-platform/eda/
+
+   # Coletar todos os logs para suporte Red Hat
+   sosreport  # ou mustgather
+   ```
+
+4. **Usar `tid` (transaction ID)** para rastrear uma ativação em múltiplos serviços
+
+### Problema: Ativação presa em estado Pending
+
+**Causas prováveis:**
+- Limite de memória/CPU atingido → verificar se há outras ativações Running
+- Worker, Redis ou activation-worker não estão rodando
+- Erro interno nos containers: `eda-server worker`, `scheduler`, `API` ou `nginx`
+
+**Ação:** terminar ativações desnecessárias e checar containers com `podman ps`
+
+### Problema: Ativação reinicia repetidamente
+
+**Restart Policy disponíveis:**
+- `On failure`: reinicia só quando o container falha
+- `Always`: sempre reinicia (máx 5 vezes)
+- `Never`: nunca reinicia
+
+**Diagnóstico:**
+1. Confirmar que Restart Policy = `On failure`
+2. Checar o código YAML do rulebook e os logs de instância
+3. Mudar Log level para `Debug` e re-executar → analisar Output na aba History
+
+### Problema: Eventos recebidos mas ações não disparam
+
+1. Revisar condições (`when`) no rulebook — devem corresponder exatamente ao payload real
+2. Verificar indentação e sintaxe YAML
+3. Confirmar que a `action` está corretamente configurada (ex: `run_job_template` com argumentos válidos)
+
+### Problema: Event Streams não enviam eventos para a ativação
+
+- Verificar que Event Stream não está em **Test mode**
+- Confirmar que o serviço de origem envia a requisição corretamente
+- Checar conectividade com a instância do Platform Gateway
+- Verificar que o `event stream worker` está ativo
+- Confirmar que a credencial do Event Stream está correta e atualizada no serviço de origem
+- Se usando certificados auto-assinados: desabilitar validação de cert no serviço de origem (para testes)
+
+### Problema: Webhook não recebido
+
 ```
+Origem (GLPI/ITSM) → EDA Controller : TCP 443 (ou porta do source plugin)
+```
+
+Verificar:
+- Firewall entre origem e EDA
+- Porta do source plugin aberta no host EDA
+- Credencial de autenticação do webhook configurada na ativação
 
 ## Payload de Webhook — Inspecionar Estrutura
 

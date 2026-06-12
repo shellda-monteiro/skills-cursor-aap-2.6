@@ -37,17 +37,39 @@ O EDA Controller processa eventos de múltiplas fontes e executa ações automat
               vm_ram: "{{ event.payload.ram }}"
 ```
 
-## Sources Plugins Disponíveis
+## Sources Plugins Disponíveis (de-minimal — AAP 2.6)
 
-| Plugin | Caso de uso |
+Os plugins nativos do `de-minimal` são listados abaixo. O namespace foi migrado de `ansible.eda.*` para `eda.builtin.*` — usar os nomes novos em novos rulebooks.
+
+### Plugins nativos do de-minimal (suportados)
+
+| Plugin (nome atual) | Tipo | Nome depreciado |
+|---|---|---|
+| `eda.builtin.dashes_to_underscores` | Event filter | `ansible.eda.dashes_to_underscores` |
+| `eda.builtin.event_splitter` | Event filter | — |
+| `eda.builtin.generic` | Event source | `ansible.eda.generic` |
+| `eda.builtin.insert_hosts_to_meta` | Event filter | `ansible.eda.insert_hosts_to_meta` |
+| `eda.builtin.insert_meta_info` | Event filter | — |
+| `eda.builtin.json_filter` | Event filter | `ansible.eda.json_filter` |
+| `eda.builtin.normalize_keys` | Event filter | `ansible.eda.normalize_keys` |
+| `eda.builtin.pg_listener` | Event source | `ansible.eda.pg_listener` |
+| `eda.builtin.range` | Event source | `ansible.eda.range` |
+| `eda.builtin.webhook` | Event source | `ansible.eda.webhook` |
+
+### Plugins no de-supported (requerem `de-supported` ou coleções dedicadas)
+
+| Event source (de-supported) | Nome depreciado (de-minimal) |
 |---|---|
-| `ansible.eda.webhook` | Receber HTTP POST de qualquer sistema (GLPI, Alertmanager, etc.) |
-| `ansible.eda.kafka` | Consumir tópicos Kafka |
-| `ansible.eda.alertmanager` | Receber alertas do Prometheus Alertmanager |
-| `ansible.eda.aws_sqs_queue` | Fila SQS da AWS |
-| `ansible.eda.dynatrace` | Alertas Dynatrace |
-| `ansible.eda.servicenow` | Eventos ServiceNow |
-| `ansible.eda.azure_service_bus` | Azure Service Bus |
+| `amazon.aws.aws_cloudtrail` | `ansible.eda.aws_cloudtrail` |
+| `amazon.aws.aws_sqs_queue` | `ansible.eda.aws_sqs_queue` |
+| `azure.azcollection.azure_service_bus` | `ansible.eda.azure_service_bus` |
+
+### Plugins a serem removidos em versão futura (evitar novos usos)
+- `ansible.eda.file`
+- `ansible.eda.file_watch`
+- `ansible.eda.journald`
+- `ansible.eda.tick`
+- `ansible.eda.url_check`
 
 ## Condições (Conditions)
 

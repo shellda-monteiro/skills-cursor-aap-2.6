@@ -1,7 +1,8 @@
 # Ch04 — Troubleshooting
 
-## Coletar Logs do AAP (Containerizado)
+## Coletar Logs do AAP
 
+### Containerizado (VM/Podman)
 ```bash
 # Verificar status de todos os containers
 podman ps -a --format "table {{.Names}}\t{{.Status}}"
@@ -16,10 +17,29 @@ podman logs automation-postgresql
 # Seguir logs em tempo real
 podman logs -f automation-controller
 
-# Coletar bundle de suporte
-# (no diretório de instalação do AAP)
-./aap_setup.sh --tags support_bundle
-# Gera: aap-support-bundle-<timestamp>.tar.gz
+# Gerar SOS report (VM-based)
+sosreport
+# Gera bundle completo com configurações, logs e diagnósticos
+```
+
+### OpenShift Operator — must-gather
+```bash
+# Coletar dados de todo o cluster
+oc adm must-gather \
+  --image=registry.redhat.io/ansible-automation-platform-25/aap-must-gather-rhel8 \
+  --dest-dir ./aap-must-gather
+
+# Coletar apenas de um namespace específico
+oc adm must-gather \
+  --image=registry.redhat.io/ansible-automation-platform-25/aap-must-gather-rhel8 \
+  --dest-dir ./aap-must-gather \
+  -- /usr/bin/ns-gather aap
+
+# Se o cluster não acessa registry.redhat.io:
+oc adm inspect
+
+# Compactar para abrir chamado no suporte
+tar cvaf must-gather.tar.gz ./aap-must-gather/
 ```
 
 ## Troubleshooting de Instalação

@@ -8,23 +8,45 @@
 4. **Audit logging** — manter Activity Stream acessível e retido
 5. **Inventory seguro** — nunca texto claro em Git (Ansible Vault obrigatório)
 
-## Hardening do Inventory File
+## Variáveis de Segurança no Inventory (Tabela Oficial — Containerizado)
 
-```ini
-# Desabilitar HTTP (forçar HTTPS)
-[all:vars]
-controller_nginx_disable_https=false     # manter HTTPS ligado
-hub_nginx_disable_https=false
-eda_nginx_disable_https=false
+Extraídas do Hardening Guide AAP 2.6:
 
-# TLS customizado (evitar auto-assinados)
-ca_tls_cert=/etc/pki/aap/ca.crt
-ca_tls_key=/etc/pki/aap/ca.key
+| Variável (Containerizado) | Valor Recomendado | Descrição |
+|---|---|---|
+| `postgresql_disable_tls` | `false` | Se `true`, desabilita TLS no PostgreSQL gerenciado. Padrão: `false`. |
+| `controller_pg_sslmode` | `verify-full` | mTLS entre Controller e DB. `verify-full` = obrigatório + verificar CN. |
+| `gateway_pg_sslmode` | `verify-full` | mTLS entre Gateway e DB. |
+| `hub_pg_sslmode` | `verify-full` | mTLS entre Hub e DB. |
+| `eda_pg_sslmode` | `verify-full` | mTLS entre EDA e DB. |
+| `controller_nginx_disable_https` | `false` | Se `true`, desabilita HTTPS no Controller. Manter `false` em produção. |
+| `gateway_nginx_disable_https` | `false` | Se `true`, desabilita HTTPS no Gateway. |
+| `hub_nginx_disable_https` | `false` | Se `true`, desabilita HTTPS no Hub. |
+| `eda_nginx_disable_https` | `false` | Se `true`, desabilita HTTPS no EDA. |
+| `controller_nginx_disable_hsts` | `false` | Se `true`, desabilita HSTS no Controller. |
+| `gateway_nginx_disable_hsts` | `false` | Se `true`, desabilita HSTS no Gateway. |
+| `hub_nginx_disable_hsts` | `false` | Se `true`, desabilita HSTS no Hub. |
+| `eda_nginx_disable_hsts` | `false` | Se `true`, desabilita HSTS no EDA. |
 
-# mTLS para PostgreSQL externo
-controller_pg_sslmode=verify-full
-controller_pg_sslrootcert=/etc/pki/aap/pg-ca.crt
-```
+## Variáveis de Certificados PKI (Tabela Oficial)
+
+| Variável RPM | Variável Containerizada | Descrição |
+|---|---|---|
+| `custom_ca_cert` | `custom_ca_cert` | CA customizada — instalada no truststore do sistema |
+| `web_server_ssl_cert` | `controller_tls_cert` | Certificado PKI do Controller |
+| `web_server_ssl_key` | `controller_tls_key` | Chave privada do Controller |
+| `automationhub_ssl_cert` | `hub_tls_cert` | Certificado do Hub |
+| `automationhub_ssl_key` | `hub_tls_key` | Chave do Hub |
+| `automationedacontroller_ssl_cert` | `eda_tls_cert` | Certificado do EDA |
+| `automationedacontroller_ssl_key` | `eda_tls_key` | Chave do EDA |
+| `postgres_ssl_cert` | `postgresql_tls_cert` | Certificado do PostgreSQL gerenciado |
+| `postgres_ssl_key` | `postgresql_tls_key` | Chave do PostgreSQL gerenciado |
+| — | `gateway_tls_cert` | Certificado do Platform Gateway |
+| — | `gateway_tls_key` | Chave do Platform Gateway |
+
+> **Nota multi-gateway com Load Balancer:** quando há múltiplos gateways atrás de LB, `gateway_tls_cert`/`gateway_tls_key` são compartilhados e o CN deve corresponder ao FQDN do LB. Para certificados individuais por nó, definir como **host variables** (não em `[all:vars]`).
+
+
 
 ## Configurações de Segurança na UI
 
@@ -93,7 +115,31 @@ Instance Group "dmz-network"      → Execution Nodes na DMZ para ativos de rede
       - "dmz-network"
 ```
 
-## Compliance — Checklist CIS AAP
+## Compliance DISA STIG, CIS e FIPS — Considerações Específicas
+
+### Requisito: noexec em file systems
+
+Perfis CIS e DISA STIG frequentemente exigem `noexec` em sistemas de arquivo como `/tmp` e `/var`. **Problema:** Ansible usa esses diretórios para arquivos temporários durante a execução.
+
+**Solução:**
+- Discussão necessária com o auditor de segurança para waivar o controle `noexec` nos diretórios usados pelo Ansible nos nós gerenciados
+- No host AAP: `$HOME/.ansible/tmp` e `/tmp` devem permitir execução
+
+### Requisito: `user.max_user_namespaces = 0`
+
+DISA STIG exige essa configuração SE containers Linux não forem necessários. Como o AAP **usa containers** (EEs, Podman), esse controle **deve ser desativado** (valor diferente de 0) para o AAP funcionar.
+
+### Requisito: Interactive session timeout
+
+DISA STIG (RHEL 8 V2R1 e RHEL 9 V2R2) exige logout por inatividade (ex: 15 min). Isso pode **interromper instalações** ou operações de backup/restore que levam mais de 1 hora.
+
+**Solução temporária durante instalação/manutenção:**
+```bash
+# Aumentar timeout do systemd-logind durante operações longas
+sudo loginctl set-property $USER IdleActionSec=7200  # 2 horas
+```
+
+### Compliance — Checklist CIS AAP
 
 ```
 [ ] TLS habilitado em todos os endpoints (sem HTTP puro)
@@ -109,6 +155,9 @@ Instance Group "dmz-network"      → Execution Nodes na DMZ para ativos de rede
 [ ] PostgreSQL com TLS e `sslmode=verify-full`
 [ ] Redis com TLS habilitado
 [ ] Receptor (Mesh) com certificados assinados pela CA interna
+[ ] Installation host dedicado — separado dos nós AAP
+[ ] Inventory file protegido com Ansible Vault
+[ ] STIG waiver documentado para noexec e user namespaces (se aplicável)
 ```
 
 ## Receptor — Segurança do Automation Mesh
