@@ -22,7 +22,7 @@ Skills são arquivos `SKILL.md` que ensinam o agente de IA do Cursor a responder
 | `aap-26-controller-uso` | Job Templates, Workflows + Visualizer, Inventories dinâmicos (VMware/Satellite/AWS/Azure), Instance Groups, API REST e webhooks | ~2 guias |
 | `aap-26-analytics-migracao` | Migração entre deployment types (RPM→Container, RPM→OCP), Automation Calculator (ROI), Savings Planner, Job Explorer | ~2 guias |
 | `aap-26-dashboard` | Automation Dashboard (app local para métricas de até 3 instâncias AAP), clusters.yaml, token rotation, ROI, troubleshooting | 1 guia |
-| `aap-26-dev-tools` | ansible-navigator (TUI/stdout, EEs, coleções, artifacts), Ansible Lightspeed/IA generativa (VS Code, trial, on-premise) | 3 guias |
+| `aap-26-dev-tools` | ansible-navigator (TUI/stdout, EEs, coleções, artifacts), Ansible Lightspeed Coding Assistant (VS Code, trial, on-premise), **Automation Intelligent Assistant** (chatbot na UI do AAP com MCP server — GA no OCP, Tech Preview no containerizado) | 3 guias + docs oficiais |
 | `aap-26-self-service` | Self-Service Automation Portal (Helm/OCP, sincronização de templates, custom templates, RBAC, troubleshooting SSL) | 3 guias |
 | `aap-26-developer-hub` | Ansible Plug-ins para Red Hat Developer Hub (Learn→Operate, Dev Spaces, software templates, instalação Helm/Operator) | 2 guias |
 
